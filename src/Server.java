@@ -5,6 +5,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashSet;
 import java.util.logging.Logger;
 
@@ -46,7 +47,7 @@ public class Server {
                     executor.execute(inputStream, outputStream);
                     logger.info("session ended. Waiting for new session ... ");
                 }
-            } catch (SocketException e) {
+            } catch (SocketException | NoSuchAlgorithmException e) {
                 //e.printStackTrace();
                 //System.out.println("something went wrong");
                 Thread.sleep(100);

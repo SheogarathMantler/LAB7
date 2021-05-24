@@ -1,5 +1,8 @@
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -18,10 +21,10 @@ public class CommandExecutor {
         this.fromScript = fromScript;
     }
 
-    public void execute(ObjectInputStream inputStream, DataOutputStream outputStream) throws ClassNotFoundException, ParserConfigurationException {
+    public void execute(ObjectInputStream inputStream, DataOutputStream outputStream) throws ClassNotFoundException, ParserConfigurationException, NoSuchAlgorithmException {
         users.put("a", "a");
         users.put("b", "b");
-
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
         // принимаем сообщение
         boolean endOfStream = false;
         while (!endOfStream) {
@@ -43,16 +46,15 @@ public class CommandExecutor {
                 } catch (ClassCastException e) {                                                                // если сообщение авторизации
                     logger.info("authorization message got");
                     AuthorizationMessage message = (AuthorizationMessage) objMessage;
+                    message.password = new String(md.digest(message.password.getBytes()));                      // хэширование
                     if (message.alreadyExist) {                                                                 // если авторизация то ищем в списке
                         if (users.containsKey(message.login) && users.get(message.login).equals(message.password)) {
                             owner = message.login;// теперь юзер может все делать
                             logger.info("sign in successful");
                             outputStream.writeUTF("sign in successful");
-                            // TODO
                         } else {
                             logger.info("sign in not successful");
                             outputStream.writeUTF("sign in not successful");
-                            // TODO
                         }
                     } else {                                                                                    // если регистрация создаем новый
                         if (users.containsKey(message.login)) {

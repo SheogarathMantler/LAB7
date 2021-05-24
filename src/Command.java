@@ -100,7 +100,6 @@ public class Command {
         logger.info("'show' command was detected");
         String description = "";
         for (Dragon dragon : set) {
-            System.out.println("here");
             description += extendedDescription(dragon) + "\n";
         }
         outputStream.writeUTF(description);

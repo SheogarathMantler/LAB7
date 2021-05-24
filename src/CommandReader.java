@@ -298,23 +298,21 @@ public class CommandReader {
         String login = null;
         String password = null;
         while (true){
-            String answer = scanner.nextLine();
+            String answer = fromconsole(scanner);
             if (answer.equals("in")) {
                 System.out.println("Enter login:");
-                login = scanner.nextLine();
+                login = fromconsole(scanner);
                 System.out.println("Enter password:");
-                password = scanner.nextLine();
+                password = fromconsole(scanner);
                 AuthorizationMessage message = new AuthorizationMessage(login, password, true);
                 return getResponse(message);
-                //TODO
             } else if (answer.equals("up")) {
                 System.out.println("Enter login:");
-                login = scanner.nextLine();
+                login = fromconsole(scanner);
                 System.out.println("Enter password:");
-                password = scanner.nextLine();
+                password = fromconsole(scanner);
                 AuthorizationMessage message = new AuthorizationMessage(login, password, false);
                  return getResponse(message);
-                //TODO
             } else {
                 System.out.println("incorrect answer, try again");
             }
@@ -511,6 +509,14 @@ public class CommandReader {
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+    private String fromconsole(Scanner scanner) {
+        if (scanner.hasNext()) {
+            return scanner.nextLine();
+        } else {
+            System.exit(0);
+        }
+        return null;
     }
 }
 
