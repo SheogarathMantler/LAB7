@@ -22,9 +22,9 @@ public class CommandExecutor {
     }
 
     public void execute(ObjectInputStream inputStream, DataOutputStream outputStream) throws ClassNotFoundException, ParserConfigurationException, NoSuchAlgorithmException {
-        users.put("a", "a");
+        MessageDigest md = MessageDigest.getInstance("SHA-1");                                               // для хэширования
+        users.put("a", new String(md.digest("a".getBytes())));
         users.put("b", "b");
-        MessageDigest md = MessageDigest.getInstance("SHA-1");
         // принимаем сообщение
         boolean endOfStream = false;
         while (!endOfStream) {

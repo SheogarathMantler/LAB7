@@ -312,7 +312,9 @@ public class CommandReader {
                 System.out.println("Enter password:");
                 password = fromconsole(scanner);
                 AuthorizationMessage message = new AuthorizationMessage(login, password, false);
-                 return getResponse(message);
+                return getResponse(message);
+            } else if (answer.equals("exit")) {
+                System.exit(0);
             } else {
                 System.out.println("incorrect answer, try again");
             }
