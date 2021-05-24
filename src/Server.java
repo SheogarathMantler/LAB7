@@ -6,7 +6,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.LinkedHashSet;
-import java.util.Scanner;
 import java.util.logging.Logger;
 
 public class Server {

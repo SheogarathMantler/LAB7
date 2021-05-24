@@ -102,8 +102,12 @@ public class CommandReader {
         boolean exitStatus = false;
         Dragon dragon = new Dragon();
         boolean wasEnter = false;                                 // для проверки нажатия на клавишу Enter
-        // here auth.
-        authorization(scanner);
+        // here authorization
+        String authMessage = "";
+        while (!(authMessage.equals("sign in successful") || authMessage.equals("registration successful!"))){     // пока не авторизуется спрашиваем
+            authMessage = authorization(scanner);
+            System.out.println(authMessage);
+        }
         while (!exitStatus) {
             afterConnecting = false;
             String[] text = null;
@@ -289,7 +293,7 @@ public class CommandReader {
         }
         return false;
     }
-    public void authorization(Scanner scanner){
+    public String authorization(Scanner scanner){
         System.out.println("Do you want to sign in or sign up? (type in or up)");
         String login = null;
         String password = null;
@@ -300,20 +304,17 @@ public class CommandReader {
                 login = scanner.nextLine();
                 System.out.println("Enter password:");
                 password = scanner.nextLine();
-                AuthorizationMessage message = new AuthorizationMessage(login, password, false);
-                System.out.println("trying to send auth mess");
-                System.out.println(getResponse(message));
-                System.out.println("sent successfully");
+                AuthorizationMessage message = new AuthorizationMessage(login, password, true);
+                return getResponse(message);
                 //TODO
-                break;
             } else if (answer.equals("up")) {
                 System.out.println("Enter login:");
                 login = scanner.nextLine();
                 System.out.println("Enter password:");
                 password = scanner.nextLine();
                 AuthorizationMessage message = new AuthorizationMessage(login, password, false);
+                 return getResponse(message);
                 //TODO
-                break;
             } else {
                 System.out.println("incorrect answer, try again");
             }

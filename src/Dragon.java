@@ -77,19 +77,22 @@ public class Dragon implements Serializable {
     public DragonType getType() {return type;}
     public DragonCave getCave(){ return cave; }
     public boolean getMarker() {return marker; }
+    public String getOwner() {return owner; }
     /**
      * update of dragon, used when command 'update' called.
      * @param dragon the dragon that will change the dragon that has the method 'update()' called
      */
     public void update(Dragon dragon) {
-        this.name = dragon.getName();
-        this.coordinates = dragon.getCoordinates();
-        this.age = dragon.getAge();
-        this.creationDate = dragon.getCreationDate();
-        this.description = dragon.getDescription();
-        this.wingspan = dragon.getWingspan();
-        this.type = dragon.getType();
-        this.cave = dragon.getCave();
+        if (CommandExecutor.owner.equals(this.owner)){ // модифицирует только тот кому дракон принадлежит
+            this.name = dragon.getName();
+            this.coordinates = dragon.getCoordinates();
+            this.age = dragon.getAge();
+            this.creationDate = dragon.getCreationDate();
+            this.description = dragon.getDescription();
+            this.wingspan = dragon.getWingspan();
+            this.type = dragon.getType();
+            this.cave = dragon.getCave();
+        }
     }
     public void setId(Integer id){
         this.id = id;
