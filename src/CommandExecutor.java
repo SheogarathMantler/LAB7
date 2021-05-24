@@ -21,7 +21,6 @@ public class CommandExecutor {
     public void execute(ObjectInputStream inputStream, DataOutputStream outputStream) throws ClassNotFoundException, ParserConfigurationException {
         users.put("a", "a");
         users.put("b", "b");
-
         // принимаем сообщение
         boolean endOfStream = false;
         while (!endOfStream) {
