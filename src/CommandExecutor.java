@@ -3,6 +3,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -23,8 +24,6 @@ public class CommandExecutor {
 
     public void execute(ObjectInputStream inputStream, DataOutputStream outputStream) throws ClassNotFoundException, ParserConfigurationException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-1");                                               // для хэширования
-        users.put("a", new String(md.digest("a".getBytes())));
-        users.put("b", "b");
         // принимаем сообщение
         boolean endOfStream = false;
         while (!endOfStream) {
@@ -46,7 +45,10 @@ public class CommandExecutor {
                 } catch (ClassCastException e) {                                                                // если сообщение авторизации
                     logger.info("authorization message got");
                     AuthorizationMessage message = (AuthorizationMessage) objMessage;
-                    message.password = new String(md.digest(message.password.getBytes()));                      // хэширование
+                    //message.password = new String(md.digest(message.password.getBytes()));                      // хэширование
+                    DBManager dbManager = new DBManager(message.login, message.password);                       // смотрим таблицу юзеров по бд
+                    dbManager.connect();
+                    users = dbManager.getUsersTable();
                     if (message.alreadyExist) {                                                                 // если авторизация то ищем в списке
                         if (users.containsKey(message.login) && users.get(message.login).equals(message.password)) {
                             owner = message.login;// теперь юзер может все делать
@@ -61,13 +63,14 @@ public class CommandExecutor {
                             outputStream.writeUTF("There is already user with this login, try again");
                         } else{
                             users.put(message.login, message.password);
+                            dbManager.addUser(message.login, message.password);
                             owner = message.login;
                             outputStream.writeUTF("registration successful!");
                         }
                     }
 
                 }
-            } catch (IOException e) { // если убили клиент, то ждём
+            } catch (IOException | SQLException e) { // если убили клиент, то ждём
                 logger.info("can't receive message");
                 break;
             }
