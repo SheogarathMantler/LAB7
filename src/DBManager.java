@@ -1,10 +1,12 @@
 import java.sql.*;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+
 // local "jdbc:postgresql://localhost:5432/mydatabase" "postgres" "1"
 public class DBManager {
-     String DB_URL = "jdbc:postgresql://pg:5432/studs";
-     String USER = "s312551";
-     String PASS = "wvz604";
+     String DB_URL = "jdbc:postgresql://localhost:5432/mydatabase";
+     String USER = "postgres";
+     String PASS = "1";
      String password;
      String login;
      Connection connection = null;
@@ -13,6 +15,7 @@ public class DBManager {
         this.password = password;
         this.login = login;
     }
+    public DBManager() { }
 
     public void connect() throws SQLException {                // подключаемся к БД (БД юзеров?)
         try {
@@ -35,6 +38,36 @@ public class DBManager {
         } else {
             System.out.println("Failed to make connection to database");
         }
+    }
+
+    public LinkedHashSet<Dragon> readCollection() {
+        LinkedHashSet<Dragon> set = new LinkedHashSet<>();
+        String selectTableSQL = "SELECT * FROM dragons";
+        try {
+            Statement statement = connection.createStatement();
+            ResultSet rs = statement.executeQuery(selectTableSQL);
+            while (rs.next()) {
+                Integer id = rs.getInt("id");
+                String name = rs.getString("name");
+                long x = rs.getLong("x");
+                Double y = rs.getDouble("y");
+                Coordinates coordinates = new Coordinates(x, y);
+                java.time.LocalDateTime date = rs.getDate("creationdate").toLocalDate().atTime(0, 0);
+                Long age = rs.getLong("age");
+                String description = rs.getString("description");
+                Double wingspan = rs.getDouble("wingspan");
+                Integer type = rs.getInt("type");
+                DragonType dragonType = intToDragonType(type);
+                Integer depth = rs.getInt("depth");
+                Double number = rs.getDouble("number");
+                DragonCave cave = new DragonCave(depth, number);
+                String owner = rs.getString("login");
+                set.add(new Dragon(id, name, coordinates, date, age, description, wingspan, dragonType, cave, owner));
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return set;
     }
     public HashMap<String, String> getUsersTable() {             // получаем список юзеров
         String selectTableSQL = "SELECT login, password FROM users";
@@ -62,6 +95,16 @@ public class DBManager {
             System.out.println("New user added!");
         } catch (SQLException throwables) {
             throwables.printStackTrace();
+        }
+    }
+
+    private DragonType intToDragonType(Integer i) {
+        if (i == 1) {
+            return DragonType.AIR;
+        } else if (i == 2) {
+            return DragonType.FIRE;
+        } else {
+            return DragonType.UNDERGROUND;
         }
     }
 }

@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.security.NoSuchAlgorithmException;
+import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.logging.Logger;
 
@@ -33,14 +34,17 @@ public class Server {
                 logger.info("сокет создан");
                 // считываем коллекцию из файла
                 fileCollectionReader = new FileCollectionReader(file, outputStream);
-
-                try {
-                    set = fileCollectionReader.readCollection(file);
-                } catch (FileCollectionException e) {
-                    set = new LinkedHashSet<>();
-                    set.add(new Dragon(true));
-                    System.out.println("создан пипец");
-                }
+                // считываем коллекцию из бд
+                DBManager dbManager = new DBManager();
+                dbManager.connect();
+                set = dbManager.readCollection();
+//                try {
+//                    set = fileCollectionReader.readCollection(file);
+//                } catch (FileCollectionException e) {
+//                    set = new LinkedHashSet<>();
+//                    set.add(new Dragon(true));
+//                    System.out.println("создан пипец");
+//                }
                 if (server.isConnected()) {
                     logger.info("server is connected");
                     CommandExecutor executor = new CommandExecutor(set, false);
@@ -51,6 +55,8 @@ public class Server {
                 //e.printStackTrace();
                 //System.out.println("something went wrong");
                 Thread.sleep(100);
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
             }
         }
     }

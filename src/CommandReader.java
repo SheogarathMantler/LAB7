@@ -378,7 +378,7 @@ public class CommandReader {
         System.out.println("Enter number Of Treasures in cave (Double, positive)");
         Double number = inputPositiveDoubleField();
         DragonCave cave = new DragonCave((int)depth, number);
-        Dragon inputDragon = new Dragon(null, name, coordinates, null, age, description, wingspan, type, cave);
+        Dragon inputDragon = new Dragon(null, name, coordinates, null, age, description, wingspan, type, cave, CommandExecutor.owner);
         return inputDragon;
     }
     public DragonType inputDragonTypeField(String type) {

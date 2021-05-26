@@ -101,7 +101,7 @@ public class FileCollectionReader {
                     DragonType dragonType = dragonTypeFromFile(stringDragonType);
                     DragonCave cave = new DragonCave(Integer.parseInt(attributes.getNamedItem("cave").getNodeValue().split(" ")[0]),
                             Double.parseDouble(attributes.getNamedItem("cave").getNodeValue().split(" ")[1]));
-                    set.add(new Dragon(id, name, coords, creationDate, age, description, wingspan, dragonType, cave));
+                    set.add(new Dragon(id, name, coords, creationDate, age, description, wingspan, dragonType, cave, "somebody"));
                 } catch (Exception e) {
                     xmlStatus = true;
                     numberOfErrors.add(i);

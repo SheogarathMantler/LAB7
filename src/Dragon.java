@@ -34,7 +34,8 @@ public class Dragon implements Serializable {
         this.marker = marker;
     }
     public Dragon(Integer Id, String n, Coordinates coords, java.time.LocalDateTime creationDate, Long age, String d,
-                  Double w, DragonType t, DragonCave c ) {
+                  Double w, DragonType t, DragonCave c, String owner ) {
+        this.owner = owner;
         this.id = Id;
         if (Id == null) this.id = new Random().nextInt();
         if ((n != null) && (n.length() != 0)) {

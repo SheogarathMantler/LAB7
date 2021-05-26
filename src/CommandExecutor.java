@@ -63,7 +63,7 @@ public class CommandExecutor {
                             outputStream.writeUTF("There is already user with this login, try again");
                         } else{
                             users.put(message.login, message.password);
-                            dbManager.addUser(message.login, message.password);
+                            dbManager.addUser(message.login, message.password);                                 // добавляем юзера в бд
                             owner = message.login;
                             outputStream.writeUTF("registration successful!");
                         }
@@ -80,7 +80,7 @@ public class CommandExecutor {
     public boolean validate(Dragon dragon) {
         try {
             Dragon dragon1 = new Dragon(dragon.getId(), dragon.getName(), dragon.getCoordinates(), dragon.getCreationDate(),
-                    dragon.getAge(), dragon.getDescription(), dragon.getWingspan(), dragon.getType(), dragon.getCave());
+                    dragon.getAge(), dragon.getDescription(), dragon.getWingspan(), dragon.getType(), dragon.getCave(), dragon.getOwner());
             return true;
         } catch (NumberFormatException e) {
             return false;
