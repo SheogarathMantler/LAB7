@@ -17,7 +17,7 @@ public class DBManager {
     }
     public DBManager() { }
 
-    public void connect() throws SQLException {                // подключаемся к БД (БД юзеров?)
+    public void connect() throws SQLException {                // подключаемся к БД
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -40,7 +40,7 @@ public class DBManager {
         }
     }
 
-    public LinkedHashSet<Dragon> readCollection() {
+    public LinkedHashSet<Dragon> readCollection() {             // считываем из БД в коллекцию
         LinkedHashSet<Dragon> set = new LinkedHashSet<>();
         String selectTableSQL = "SELECT * FROM dragons";
         try {
@@ -69,6 +69,21 @@ public class DBManager {
         }
         return set;
     }
+    public void update(LinkedHashSet<Dragon> set) {              // по коллекции обновляем БД
+        LinkedHashSet<Dragon> previousSet = readCollection();    // сравниваем сеты и все что отличается добавляем в БД
+        LinkedHashSet<Dragon> dragonsToAdd = new LinkedHashSet<>();
+        LinkedHashSet<Dragon> dragonsToDelete = new LinkedHashSet<>();
+        for (Dragon dragon : set) {
+            if (previousSet.stream().map(Dragon::getId).anyMatch(id -> id == dragon.getId())) {  // если раньше уже был такой id
+                set.removeIf(d -> d.getId() == dragon.getId());
+                //TODO
+            }
+
+
+        }
+
+
+    }
     public HashMap<String, String> getUsersTable() {             // получаем список юзеров
         String selectTableSQL = "SELECT login, password FROM users";
         HashMap<String, String> users = new HashMap<>();
@@ -86,13 +101,29 @@ public class DBManager {
         return users;
     }
 
-    public void addUser(String login, String password) {
+    public void addUser(String login, String password) {        // регистрация нового юзера
         String insertTableSQL = "INSERT INTO users" + "(login, password) " +
                 "VALUES('" + login + "', '" + password + "')";
         try {
             Statement statement = connection.createStatement();
             statement.executeUpdate(insertTableSQL);
             System.out.println("New user added!");
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
+    public void addDragon(Dragon dragon) {        // регистрация нового юзера
+        String insertTableSQL = "INSERT INTO dragons" + "(id, name, x, y, creationdate, age, " +
+                "description, wingspan, type, depth, number, login, password)" +
+                "VALUES('" + dragon.getId() + "', '" + dragon.getName() +
+                "', '" + dragon.getCoordinates().getX() + "', '" + dragon.getCoordinates().getY() +
+                "', '" + dragon.getCreationDate() + "', '" + dragon.getAge() + "', '" + dragon.getDescription() +
+                "', '" + dragon.getWingspan() + "', '" + dragonTypeToInt(dragon.getType()) + "', '" + dragon.getCave().getDepth() +
+                "', '" + dragon.getCave().getNumberOfTreasures() + "', '" + dragon.getOwner() + "')";
+        try {
+            Statement statement = connection.createStatement();
+            statement.executeUpdate(insertTableSQL);
+            System.out.println("New dragon added!");
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
@@ -105,6 +136,15 @@ public class DBManager {
             return DragonType.FIRE;
         } else {
             return DragonType.UNDERGROUND;
+        }
+    }
+    public Integer dragonTypeToInt(DragonType type) {
+        if (type == DragonType.AIR) {
+            return 1;
+        } else if (type == DragonType.FIRE) {
+            return 2;
+        } else {
+            return 3;
         }
     }
 }

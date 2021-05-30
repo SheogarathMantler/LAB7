@@ -26,13 +26,13 @@ public class FileCollectionReader {
         this.file = file;
     }
 
-    public LinkedHashSet<Dragon> readCollection(File file) throws ParserConfigurationException, SAXException, IOException, FileCollectionException {
+    public LinkedHashSet<Dragon> readCollection(File file) throws ParserConfigurationException, SAXException, IOException, NotMatchOwnerException {
         try {
             file = new File(System.getenv("FILE"));      // проверка на наличие переменной окружения
         } catch (NullPointerException e) {
             logger.info("Cant find env variable");
             outputStream.writeUTF("Cant find env variable");
-            throw new FileCollectionException();
+            throw new NotMatchOwnerException();
         }
         Scanner xmlScanner = null;
         try {
@@ -54,7 +54,7 @@ public class FileCollectionReader {
                 logger.info("File not found");
                 outputStream.writeUTF("File not found");
             }
-            throw new FileCollectionException();
+            throw new NotMatchOwnerException();
         }
     }
 

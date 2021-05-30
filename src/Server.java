@@ -21,33 +21,22 @@ public class Server {
             System.exit(0);
         }
         LinkedHashSet<Dragon> set = null;
-        FileCollectionReader fileCollectionReader;
         while(true) {
             try {
                 File file = null;
                 // создаем сокет
                 Socket server = serverSocket.accept();
                 // создаем потоки
-
                 DataOutputStream outputStream = new DataOutputStream(server.getOutputStream());
                 ObjectInputStream inputStream = new ObjectInputStream(server.getInputStream());
                 logger.info("сокет создан");
-                // считываем коллекцию из файла
-                fileCollectionReader = new FileCollectionReader(file, outputStream);
                 // считываем коллекцию из бд
                 DBManager dbManager = new DBManager();
                 dbManager.connect();
                 set = dbManager.readCollection();
-//                try {
-//                    set = fileCollectionReader.readCollection(file);
-//                } catch (FileCollectionException e) {
-//                    set = new LinkedHashSet<>();
-//                    set.add(new Dragon(true));
-//                    System.out.println("создан пипец");
-//                }
                 if (server.isConnected()) {
                     logger.info("server is connected");
-                    CommandExecutor executor = new CommandExecutor(set, false);
+                    CommandExecutor executor = new CommandExecutor(dbManager, set, false);
                     executor.execute(inputStream, outputStream);
                     logger.info("session ended. Waiting for new session ... ");
                 }

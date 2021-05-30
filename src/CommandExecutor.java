@@ -16,10 +16,12 @@ public class CommandExecutor {
     private final LinkedHashSet<Dragon> set;
     private final boolean fromScript;
     private final Logger logger = Logger.getLogger("server.executor");
+    private DBManager dbManager;
     Map<String, String> users = new HashMap<>(); // список пользователей
-    public CommandExecutor(LinkedHashSet<Dragon> set, boolean fromScript) {
+    public CommandExecutor(DBManager dbManager, LinkedHashSet<Dragon> set, boolean fromScript) {
         this.set = set;
         this.fromScript = fromScript;
+        this.dbManager = dbManager;
     }
 
     public void execute(ObjectInputStream inputStream, DataOutputStream outputStream) throws ClassNotFoundException, ParserConfigurationException, NoSuchAlgorithmException {
@@ -42,6 +44,7 @@ public class CommandExecutor {
                     Command command = new Command(outputStream, message.argument, message.dragon, set, fromScript); // создаем Command и выполняем команду
                     command.changeType(message.type);
                     command.run();
+                    dbManager.update(set);                                                                      // после выполнения обновляем БД
                 } catch (ClassCastException e) {                                                                // если сообщение авторизации
                     logger.info("authorization message got");
                     AuthorizationMessage message = (AuthorizationMessage) objMessage;
@@ -51,7 +54,7 @@ public class CommandExecutor {
                     users = dbManager.getUsersTable();
                     if (message.alreadyExist) {                                                                 // если авторизация то ищем в списке
                         if (users.containsKey(message.login) && users.get(message.login).equals(message.password)) {
-                            owner = message.login;// теперь юзер может все делать
+                            owner = message.login;                                                              // теперь юзер может все делать
                             logger.info("sign in successful");
                             outputStream.writeUTF("sign in successful");
                         } else {

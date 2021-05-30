@@ -159,19 +159,23 @@ public class Command {
     }
     public void update() throws IOException {
         logger.info("'update' command was detected");
+        String answer = "";
         try {
             int arg_id = Integer.parseInt(argument);
-            if (set.stream().map(Dragon::getId).anyMatch(id -> id == arg_id)) {
-                set.stream().filter(d -> d.getId() == arg_id)
-                        .forEach(d -> d.update(dragon));
-                outputStream.writeUTF("Dragon has been updated");
+            if (set.stream().map(Dragon::getId).anyMatch(id -> id == arg_id)) { // если есть такой айди
+                if (set.stream().map(Dragon::getOwner).anyMatch(owner -> owner.equals(CommandExecutor.owner))) { // если есть драконы этого пользователя
+                    set.stream().filter(d -> d.getId() == arg_id && d.getOwner().equals(CommandExecutor.owner))
+                            .forEach(d -> d.update(dragon));
+                    outputStream.writeUTF("Dragon has been updated");
+                }
+
+
                 logger.info("answer sent");
             } else {
                 outputStream.writeUTF("No such element id in set. Try 'show' to see available id's");
                 logger.info("answer sent");
             }
-
-        } catch (NumberFormatException e){
+        } catch (NumberFormatException e) {
             outputStream.writeUTF("Invalid argument. Try again");
             logger.info("answer sent");
         }
@@ -181,7 +185,7 @@ public class Command {
         try {
             int arg_id = Integer.parseInt(argument);
             if (set.stream().map(Dragon::getId).anyMatch(id -> id == arg_id)) {
-                set.removeIf(d -> d.getId() == arg_id);
+                set.removeIf(d -> d.getId() == arg_id && d.getOwner().equals(CommandExecutor.owner));
                 outputStream.writeUTF("Element(s) has been removed");
                 logger.info("answer sent");
             } else {
