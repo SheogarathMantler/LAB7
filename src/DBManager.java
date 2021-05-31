@@ -4,9 +4,9 @@ import java.util.LinkedHashSet;
 
 // local "jdbc:postgresql://localhost:5432/mydatabase" "postgres" "1"
 public class DBManager {
-     String DB_URL = "jdbc:postgresql://localhost:5432/mydatabase";
-     String USER = "postgres";
-     String PASS = "1";
+     String DB_URL = "jdbc:postgresql://pg:5432/studs";
+     String USER = "s312551";
+     String PASS = "wvz604";
      String password;
      String login;
      Connection connection = null;
