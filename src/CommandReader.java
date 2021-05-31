@@ -17,7 +17,8 @@ import java.util.Scanner;
 
 // считывает команды из консоли и принимает ответы с сервера, выводит их в консоль
 public class CommandReader {
-    boolean demoMode;
+    String login = null;
+    String password = null;
     InetSocketAddress address;
     SocketChannel channel;
     ByteArrayOutputStream byteArrayOutputStream;
@@ -74,7 +75,7 @@ public class CommandReader {
                 buffer.flip();
                 return StandardCharsets.UTF_8.decode(buffer).toString();
             } catch (IOException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 connect();
             }
         }
@@ -103,10 +104,12 @@ public class CommandReader {
         Dragon dragon = new Dragon();
         boolean wasEnter = false;                                 // для проверки нажатия на клавишу Enter
         // here authorization
-        String authMessage = "";
-        while (!(authMessage.equals("sign in successful") || authMessage.equals("registration successful!"))){     // пока не авторизуется спрашиваем
-            authMessage = authorization(scanner);
-            System.out.println(authMessage);
+        if (!fromScript){
+            String authMessage = "";
+            while (!(authMessage.equals("sign in successful") || authMessage.equals("registration successful!"))){     // пока не авторизуется спрашиваем
+                authMessage = authorization(scanner);
+                System.out.println(authMessage);
+            }
         }
         while (!exitStatus) {
             afterConnecting = false;
@@ -119,7 +122,7 @@ public class CommandReader {
                 if (textline.trim().isEmpty()) {wasEnter = true; continue;}
                 text = textline.replaceAll("^\\s+", "").split(" ", 2);
             } else {
-                objectOutputStream.writeObject(new Message(true));
+                objectOutputStream.writeObject(new ExtendedMessage(new Message(true), login, password));
                 objectOutputStream.flush();
                 System.exit(0);
             }
@@ -201,7 +204,7 @@ public class CommandReader {
             }
             try {            // если нормальная команда отправляем на сервер
                 if (normalCommand) {
-                    Message message = new Message(dragon, type, argument, fromScript);
+                    ExtendedMessage message = new ExtendedMessage(new Message(dragon, type, argument, fromScript), login, password);
                     if (!(type == Command.CommandType.execute_script)) {
                         String response = getResponse(message);
                         if (response.equals("Cant find env variable") || response.equals("Permission to read denied") || response.equals("File not found") ||
@@ -232,7 +235,7 @@ public class CommandReader {
 
         boolean exitStatus = false;
         boolean wasEnter = false;
-        //getResponse(new Message(false)); // для проверки нажатия на клавишу Enter
+        getResponse(new ExtendedMessage(new Message(false), login, password)); // для проверки нажатия на клавишу Enter
         while (!exitStatus) {
             afterConnecting = false;
             String[] text = null;
@@ -247,7 +250,7 @@ public class CommandReader {
                 }
                 text = textline.replaceAll("^\\s+", "").split(" ", 2);
             } else {
-                objectOutputStream.writeObject(new Message(true));
+                objectOutputStream.writeObject(new ExtendedMessage(new Message(true), login, password));
                 objectOutputStream.flush();
                 System.exit(0);
             }
@@ -273,7 +276,7 @@ public class CommandReader {
             }
             try {
                 if (normalCommand) {
-                    Message message = new Message(new Dragon(), type, null, false);
+                    ExtendedMessage message = new ExtendedMessage(new Message(new Dragon(), type, null, false), login, password);
                     String response = getResponse(message);
                     if (response.startsWith("help") && type != Command.CommandType.help) response = "";
                     if (response.equals("Cant find env variable") || response.equals("Permission to read denied") || response.equals("File not found") ||
@@ -295,8 +298,6 @@ public class CommandReader {
     }
     public String authorization(Scanner scanner){
         System.out.println("Do you want to sign in or sign up? (type in or up)");
-        String login = null;
-        String password = null;
         while (true){
             String answer = fromconsole(scanner);
             if (answer.equals("in")) {
@@ -378,7 +379,8 @@ public class CommandReader {
         System.out.println("Enter number Of Treasures in cave (Double, positive)");
         Double number = inputPositiveDoubleField();
         DragonCave cave = new DragonCave((int)depth, number);
-        Dragon inputDragon = new Dragon(null, name, coordinates, null, age, description, wingspan, type, cave, CommandExecutor.owner);
+        System.out.println("owner is " + login);
+        Dragon inputDragon = new Dragon(null, name, coordinates, null, age, description, wingspan, type, cave, login);
         return inputDragon;
     }
     public DragonType inputDragonTypeField(String type) {

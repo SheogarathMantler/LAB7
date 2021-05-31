@@ -25,12 +25,17 @@ public class Command {
     private CommandType type = CommandType.help;
     Dragon dragon;
     Logger logger = Logger.getLogger("server.command");
-    public Command(DataOutputStream outputStream, String argument, Dragon dragon, LinkedHashSet<Dragon> set, boolean fromScript) {
+    String login = null;
+    String password = null;
+
+    public Command(DataOutputStream outputStream, String argument, Dragon dragon, LinkedHashSet<Dragon> set, boolean fromScript, String login, String password) {
         this.outputStream = outputStream;
         this.argument = argument;
         this.set = set;
         this.fromScript = fromScript;
         this.dragon = dragon;
+        this.login = login;
+        this.password = password;
     }
     public void changeArgument(String argument) {
         this.argument = argument;
@@ -114,7 +119,7 @@ public class Command {
         logger.info("'exit' command was detected");
         outputStream.writeUTF("session finished");
         exitStatus = true;
-        save();
+        //save();
         outputStream.flush();
     }
 
@@ -163,13 +168,15 @@ public class Command {
         try {
             int arg_id = Integer.parseInt(argument);
             if (set.stream().map(Dragon::getId).anyMatch(id -> id == arg_id)) { // если есть такой айди
-                if (set.stream().map(Dragon::getOwner).anyMatch(owner -> owner.equals(CommandExecutor.owner))) { // если есть драконы этого пользователя
-                    set.stream().filter(d -> d.getId() == arg_id && d.getOwner().equals(CommandExecutor.owner))
-                            .forEach(d -> d.update(dragon));
-                    outputStream.writeUTF("Dragon has been updated");
+                boolean wasUpdated = false;
+                for (Dragon d : set) {
+                    if (d.getId() == arg_id && d.getOwner().equals(login)) {
+                        d.update(dragon);
+                        wasUpdated = true;
+                        outputStream.writeUTF("Your dragon has been updated");
+                    }
                 }
-
-
+                if(!wasUpdated) outputStream.writeUTF("You're not the owner of this dragon. You can modify only dragons you own");
                 logger.info("answer sent");
             } else {
                 outputStream.writeUTF("No such element id in set. Try 'show' to see available id's");
@@ -185,7 +192,7 @@ public class Command {
         try {
             int arg_id = Integer.parseInt(argument);
             if (set.stream().map(Dragon::getId).anyMatch(id -> id == arg_id)) {
-                set.removeIf(d -> d.getId() == arg_id && d.getOwner().equals(CommandExecutor.owner));
+                set.removeIf(d -> d.getId() == arg_id && d.getOwner().equals(login));
                 outputStream.writeUTF("Element(s) has been removed");
                 logger.info("answer sent");
             } else {
@@ -294,7 +301,7 @@ public class Command {
     public static String extendedDescription(Dragon dragon) {
         return Stream.of(dragon.getId(), dragon.getName(), dragon.getType(), dragon.getAge(), dragon.getCoordinates().getX(),
                 dragon.getCoordinates().getY(), dragon.getDescription(), dragon.getWingspan(), dragon.getCreationDate(),
-                dragon.getCave().getDepth(), dragon.getCave().getNumberOfTreasures()).map(Object::toString).collect(Collectors.joining(", "));
+                dragon.getCave().getDepth(), dragon.getCave().getNumberOfTreasures(), dragon.getOwner()).map(Object::toString).collect(Collectors.joining(", "));
     }
 
     public enum CommandType {

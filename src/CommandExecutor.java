@@ -1,18 +1,17 @@
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.logging.Logger;
 
 // принимает от клиента объект Message, преобразовывает его в команду и выполняет её
 public class CommandExecutor {
-    static String owner = null;
+    String login = null;
+    String password = null;
     private final LinkedHashSet<Dragon> set;
     private final boolean fromScript;
     private final Logger logger = Logger.getLogger("server.executor");
@@ -32,7 +31,8 @@ public class CommandExecutor {
             try {
                 Object objMessage = inputStream.readObject();                                                // считали хоть что-то
                 try {
-                    Message message = (Message) objMessage;                                                  // если обычное сообщение
+                    ExtendedMessage ext_message = (ExtendedMessage) objMessage;                                                  // если обычное сообщение
+                    Message message = ext_message.getMessage();
                     logger.info("message received");
                     if (message.isEnd) {
                         logger.info("Ctrl+D ??");
@@ -41,7 +41,7 @@ public class CommandExecutor {
                     if (message.type == Command.CommandType.exit && !message.metaFromScript)
                         endOfStream = true;                                                                   // заканчиваем принимать сообщения после команды exit не из скрипта
                     if (!validate(message.dragon) || !(message.dragon instanceof Dragon)) throw new IOException();
-                    Command command = new Command(outputStream, message.argument, message.dragon, set, fromScript); // создаем Command и выполняем команду
+                    Command command = new Command(outputStream, message.argument, message.dragon, set, fromScript, login, password); // создаем Command и выполняем команду
                     command.changeType(message.type);
                     command.run();
                     dbManager.update(set);                                                                      // после выполнения обновляем БД
@@ -51,10 +51,10 @@ public class CommandExecutor {
                     //message.password = new String(md.digest(message.password.getBytes()));                      // хэширование
                     DBManager dbManager = new DBManager(message.login, message.password);                       // смотрим таблицу юзеров по бд
                     dbManager.connect();
-                    users = dbManager.getUsersTable();
+                    users = dbManager.readUserHashMap();
                     if (message.alreadyExist) {                                                                 // если авторизация то ищем в списке
                         if (users.containsKey(message.login) && users.get(message.login).equals(message.password)) {
-                            owner = message.login;                                                              // теперь юзер может все делать
+                            login = message.login;                                                                // теперь юзер может все делать
                             logger.info("sign in successful");
                             outputStream.writeUTF("sign in successful");
                         } else {
@@ -67,7 +67,7 @@ public class CommandExecutor {
                         } else{
                             users.put(message.login, message.password);
                             dbManager.addUser(message.login, message.password);                                 // добавляем юзера в бд
-                            owner = message.login;
+                            login = message.login;
                             outputStream.writeUTF("registration successful!");
                         }
                     }

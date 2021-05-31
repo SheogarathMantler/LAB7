@@ -84,16 +84,15 @@ public class Dragon implements Serializable {
      * @param dragon the dragon that will change the dragon that has the method 'update()' called
      */
     public void update(Dragon dragon) {
-        if (CommandExecutor.owner.equals(this.owner)){ // модифицирует только тот кому дракон принадлежит
-            this.name = dragon.getName();
-            this.coordinates = dragon.getCoordinates();
-            this.age = dragon.getAge();
-            this.creationDate = dragon.getCreationDate();
-            this.description = dragon.getDescription();
-            this.wingspan = dragon.getWingspan();
-            this.type = dragon.getType();
-            this.cave = dragon.getCave();
-        }
+        this.name = dragon.getName();
+        this.coordinates = dragon.getCoordinates();
+        this.age = dragon.getAge();
+        this.creationDate = dragon.getCreationDate();
+        this.description = dragon.getDescription();
+        this.wingspan = dragon.getWingspan();
+        this.type = dragon.getType();
+        this.cave = dragon.getCave();
+
     }
     public void setId(Integer id){
         this.id = id;

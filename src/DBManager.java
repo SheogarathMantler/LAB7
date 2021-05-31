@@ -71,20 +71,14 @@ public class DBManager {
     }
     public void update(LinkedHashSet<Dragon> set) {              // по коллекции обновляем БД
         LinkedHashSet<Dragon> previousSet = readCollection();    // сравниваем сеты и все что отличается добавляем в БД
-        LinkedHashSet<Dragon> dragonsToAdd = new LinkedHashSet<>();
-        LinkedHashSet<Dragon> dragonsToDelete = new LinkedHashSet<>();
-        for (Dragon dragon : set) {
-            if (previousSet.stream().map(Dragon::getId).anyMatch(id -> id == dragon.getId())) {  // если раньше уже был такой id
-                set.removeIf(d -> d.getId() == dragon.getId());
-                //TODO
-            }
-
-
+        for (Dragon dragon : previousSet) {
+            deleteDragon(dragon.getId());
         }
-
-
+        for (Dragon dragon : set) {
+            addDragon(dragon);
+        }
     }
-    public HashMap<String, String> getUsersTable() {             // получаем список юзеров
+    public HashMap<String, String> readUserHashMap() {             // получаем список юзеров
         String selectTableSQL = "SELECT login, password FROM users";
         HashMap<String, String> users = new HashMap<>();
         try {
@@ -112,9 +106,18 @@ public class DBManager {
             throwables.printStackTrace();
         }
     }
+    public void deleteDragon(Integer id) {
+        String deleteTableSQL = "DELETE FROM dragons WHERE id = " + id + ";";
+        try {
+            Statement statement = connection.createStatement();
+            statement.executeUpdate(deleteTableSQL);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
     public void addDragon(Dragon dragon) {        // регистрация нового юзера
         String insertTableSQL = "INSERT INTO dragons" + "(id, name, x, y, creationdate, age, " +
-                "description, wingspan, type, depth, number, login, password)" +
+                "description, wingspan, type, depth, number, login)" +
                 "VALUES('" + dragon.getId() + "', '" + dragon.getName() +
                 "', '" + dragon.getCoordinates().getX() + "', '" + dragon.getCoordinates().getY() +
                 "', '" + dragon.getCreationDate() + "', '" + dragon.getAge() + "', '" + dragon.getDescription() +
@@ -123,7 +126,6 @@ public class DBManager {
         try {
             Statement statement = connection.createStatement();
             statement.executeUpdate(insertTableSQL);
-            System.out.println("New dragon added!");
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
