@@ -62,7 +62,8 @@ public class DBManager {
                 Double number = rs.getDouble("number");
                 DragonCave cave = new DragonCave(depth, number);
                 String owner = rs.getString("login");
-                set.add(new Dragon(id, name, coordinates, date, age, description, wingspan, dragonType, cave, owner));
+                Dragon addedDragon = new Dragon(id, name, coordinates, date, age, description, wingspan, dragonType, cave, owner);
+                if(CommandExecutor.validate(addedDragon)) set.add(addedDragon);       // если нормальный дракон то добавляем
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();

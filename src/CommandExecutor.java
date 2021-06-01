@@ -80,7 +80,7 @@ public class CommandExecutor {
         }
 
     }
-    public boolean validate(Dragon dragon) {
+    public static boolean validate(Dragon dragon) {
         try {
             Dragon dragon1 = new Dragon(dragon.getId(), dragon.getName(), dragon.getCoordinates(), dragon.getCreationDate(),
                     dragon.getAge(), dragon.getDescription(), dragon.getWingspan(), dragon.getType(), dragon.getCave(), dragon.getOwner());

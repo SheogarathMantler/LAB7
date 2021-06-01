@@ -11,7 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.logging.Logger;
 
 public class Server {
-    public static void main(String[] args) throws IOException, SAXException, ParserConfigurationException, ClassNotFoundException, InterruptedException {
+    public static void main(String[] args) throws IOException, ParserConfigurationException, ClassNotFoundException, InterruptedException {
         Logger logger = Logger.getLogger("server.main");
         ServerSocket serverSocket = null;
         try {
@@ -33,7 +33,7 @@ public class Server {
                 // считываем коллекцию из бд
                 DBManager dbManager = new DBManager();
                 dbManager.connect();
-                set = dbManager.readCollection();
+                set = dbManager.readCollection(); // считали коллекцию из дб
                 if (server.isConnected()) {
                     logger.info("server is connected");
                     CommandExecutor executor = new CommandExecutor(dbManager, set, false);
