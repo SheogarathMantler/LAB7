@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 
 // принимает от клиента объект Message, преобразовывает его в команду и выполняет её
@@ -15,12 +16,16 @@ public class CommandExecutor {
     private final LinkedHashSet<Dragon> set;
     private final boolean fromScript;
     private final Logger logger = Logger.getLogger("server.executor");
-    private DBManager dbManager;
+    private final DBManager dbManager;
     Map<String, String> users = new HashMap<>(); // список пользователей
-    public CommandExecutor(DBManager dbManager, LinkedHashSet<Dragon> set, boolean fromScript) {
-        this.set = set;
+    private final Executor handlePool;
+    private final Executor outPool;
+    public CommandExecutor(DBManager dbManager, boolean fromScript, Executor handlePool, Executor outPool) {
+        this.set = dbManager.readCollection();
         this.fromScript = fromScript;
         this.dbManager = dbManager;
+        this.handlePool = handlePool;
+        this.outPool = outPool;
     }
 
     public void execute(ObjectInputStream inputStream, DataOutputStream outputStream) throws ClassNotFoundException, ParserConfigurationException, NoSuchAlgorithmException {
@@ -40,15 +45,21 @@ public class CommandExecutor {
                     }
                     if (message.type == Command.CommandType.exit && !message.metaFromScript)
                         endOfStream = true;                                                                   // заканчиваем принимать сообщения после команды exit не из скрипта
-                    if (!validate(message.dragon) || !(message.dragon instanceof Dragon)) throw new IOException();
-                    Command command = new Command(outputStream, message.argument, message.dragon, set, fromScript, login, password); // создаем Command и выполняем команду
+                    if (!validate(message.dragon) || message.dragon == null) throw new IOException();
+                    Command command = new Command(outputStream, message.argument, message.dragon, dbManager, fromScript, login, password); // создаем Command и выполняем команду в одном из потоков
                     command.changeType(message.type);
-                    command.run();
-                    dbManager.update(set);                                                                      // после выполнения обновляем БД
+                    handlePool.execute(() -> {
+                        try {
+                            command.run(outPool);
+                        } catch (IOException | ParserConfigurationException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                                                                                         // после выполнения обновляем БД
                 } catch (ClassCastException e) {                                                                // если сообщение авторизации
                     logger.info("authorization message got");
                     AuthorizationMessage message = (AuthorizationMessage) objMessage;
-                    //message.password = new String(md.digest(message.password.getBytes()));                      // хэширование
+                    message.password = new String(md.digest(message.password.getBytes()));                      // хэширование
                     DBManager dbManager = new DBManager(message.login, message.password);                       // смотрим таблицу юзеров по бд
                     dbManager.connect();
                     users = dbManager.readUserHashMap();

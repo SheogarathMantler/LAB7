@@ -10,7 +10,9 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,11 +29,13 @@ public class Command {
     Logger logger = Logger.getLogger("server.command");
     String login = null;
     String password = null;
+    DBManager dbManager;
 
-    public Command(DataOutputStream outputStream, String argument, Dragon dragon, LinkedHashSet<Dragon> set, boolean fromScript, String login, String password) {
+    public Command(DataOutputStream outputStream, String argument, Dragon dragon, DBManager dbManager,  boolean fromScript, String login, String password) {
         this.outputStream = outputStream;
         this.argument = argument;
-        this.set = set;
+        this.dbManager = dbManager;
+        this.set = dbManager.readCollection();
         this.fromScript = fromScript;
         this.dragon = dragon;
         this.login = login;
@@ -43,27 +47,33 @@ public class Command {
     public void changeType(CommandType type) {
         this.type = type;
     }
-    public void run() throws IOException, ParserConfigurationException {
+    public void run(Executor outPool) throws IOException, ParserConfigurationException {
         logger.info("running command");
-        try {
-            switch (type) {
-                case help: this.help();break;
-                case info: this.info();break;
-                case show: this.show();break;
-                case clear: this.clear();break;
-                case exit: this.exit();break;
-                case add: this.add();break;
-                case add_if_max: this.add_if_max();break;
-                case add_if_min: this.add_if_min();break;
-                case filter_less_than_age: this.filter_less_than_age();break;
-                case filter_starts_with_name: this.filter_starts_with_name();break;
-                case print_field_descending_cave: this.print_field_descending_cave();break;
-                case update: this.update();break;
-                case remove_by_id: this.remove_by_id();break;
-                case remove_lower: this.remove_lower();break;
-                case mode: this.mode();break;
+        outPool.execute(() -> {
+            try {
+                switch (type) {
+                    case help: this.help();break;
+                    case info: this.info();break;
+                    case show: this.show();break;
+                    case clear: this.clear();break;
+                    case exit: this.exit();break;
+                    case add: this.add();break;
+                    case add_if_max: this.add_if_max();break;
+                    case add_if_min: this.add_if_min();break;
+                    case filter_less_than_age: this.filter_less_than_age();break;
+                    case filter_starts_with_name: this.filter_starts_with_name();break;
+                    case print_field_descending_cave: this.print_field_descending_cave();break;
+                    case update: this.update();break;
+                    case remove_by_id: this.remove_by_id();break;
+                    case remove_lower: this.remove_lower();break;
+                    case mode: this.mode();break;
+                }
+
+            }   catch (NullPointerException ignored) {} catch (IOException e) {
+                e.printStackTrace();
             }
-        }   catch (NullPointerException ignored) {}
+        });
+
     }
     public void mode() throws IOException {
         System.out.println("here");
@@ -112,10 +122,15 @@ public class Command {
     }
     public void clear() throws IOException {
         logger.info("'clear' command was detected");
-        outputStream.writeUTF("cleared");
-        set.clear();
+        try {
+            outputStream.writeUTF("cleared");
+            set.clear();
+            dbManager.update(set);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
     }
-    public void exit() throws IOException, ParserConfigurationException {
+    public void exit() throws IOException {
         logger.info("'exit' command was detected");
         outputStream.writeUTF("session finished");
         exitStatus = true;
@@ -133,15 +148,27 @@ public class Command {
     }
     public void add() throws IOException {
         logger.info("'add' command was detected");
-        set.add(dragon);
-        outputStream.writeUTF("new Dragon has been added");
-        logger.info("answer sent");
+        try {
+            set.add(dragon);
+            dbManager.update(set);
+            outputStream.writeUTF("new Dragon has been added");
+            logger.info("answer sent");
+        } catch (SQLException e) {
+            outputStream.writeUTF("Connection failed. Can't add dragon");
+        }
+
+
     }
     public void add_if_max() throws IOException {
         logger.info("'add_if_max' command was detected");
         if (set.stream().map(Dragon::getAge).allMatch(age -> age < dragon.getAge())) {
-            set.add(dragon);
-            outputStream.writeUTF("new Dragon has been added");
+            try {
+                set.add(dragon);
+                dbManager.update(set);
+                outputStream.writeUTF("new Dragon has been added");
+            } catch (SQLException throwables) {
+                outputStream.writeUTF("Connection failed. Can't add dragon");
+            }
         } else {
             outputStream.writeUTF("new Dragon has NOT been added");
         }
@@ -150,17 +177,28 @@ public class Command {
     public void add_if_min() throws IOException {
         logger.info("'add_if_min' command was detected");
         if (set.stream().map(Dragon::getAge).allMatch(age -> age > dragon.getAge())) {
-            set.add(dragon);
-            outputStream.writeUTF("new Dragon has been added");
-        }
-        else {
+            try {
+                set.add(dragon);
+                dbManager.update(set);
+                outputStream.writeUTF("new Dragon has been added");
+            } catch (SQLException throwables) {
+                outputStream.writeUTF("Connection failed. Can't add dragon");
+            }
+        } else {
             outputStream.writeUTF("new Dragon has NOT been added");
         }
         logger.info("answer sent");
     }
-    public void remove_lower() {
+    public void remove_lower() throws IOException {
         logger.info("'remove_lower' command was detected");
-        set.removeIf(d -> d.getAge() < dragon.getAge());
+        long arg_age = Long.parseLong(argument);
+        try {
+            set.removeIf(d -> d.getAge() < arg_age && d.getOwner().equals(login));
+            dbManager.update(set);
+            outputStream.writeUTF("Element's were removed (if you owned them)");
+        } catch (SQLException e) {
+            outputStream.writeUTF("Connection failed. Can't remove dragon");
+        }
     }
     public void update() throws IOException {
         logger.info("'update' command was detected");
@@ -169,14 +207,19 @@ public class Command {
             int arg_id = Integer.parseInt(argument);
             if (set.stream().map(Dragon::getId).anyMatch(id -> id == arg_id)) { // если есть такой айди
                 boolean wasUpdated = false;
-                for (Dragon d : set) {
-                    if (d.getId() == arg_id && d.getOwner().equals(login)) {
-                        d.update(dragon);
-                        wasUpdated = true;
-                        outputStream.writeUTF("Your dragon has been updated");
+                try {
+                    for (Dragon d : set) {
+                        if (d.getId() == arg_id && d.getOwner().equals(login)) {
+                            d.update(dragon);
+                            dbManager.update(set);
+                            wasUpdated = true;
+                            outputStream.writeUTF("Your dragon has been updated");
+                        }
                     }
+                    if(!wasUpdated) outputStream.writeUTF("You're not the owner of this dragon. You can modify only dragons you own");
+                } catch (SQLException e) {
+                    outputStream.writeUTF("Connection failed. Can't update dragon");
                 }
-                if(!wasUpdated) outputStream.writeUTF("You're not the owner of this dragon. You can modify only dragons you own");
                 logger.info("answer sent");
             } else {
                 outputStream.writeUTF("No such element id in set. Try 'show' to see available id's");
@@ -193,7 +236,8 @@ public class Command {
             int arg_id = Integer.parseInt(argument);
             if (set.stream().map(Dragon::getId).anyMatch(id -> id == arg_id)) {
                 set.removeIf(d -> d.getId() == arg_id && d.getOwner().equals(login));
-                outputStream.writeUTF("Element(s) has been removed");
+                dbManager.update(set);
+                outputStream.writeUTF("Element(s) has been removed (if you owned them");
                 logger.info("answer sent");
             } else {
                 outputStream.writeUTF("No such element in set");
@@ -202,6 +246,8 @@ public class Command {
         } catch (NumberFormatException e){
             outputStream.writeUTF("Invalid argument. Try again");
             logger.info("answer sent");
+        } catch (SQLException throwables) {
+            outputStream.writeUTF("Connection failed. Can't remove dragon");
         }
     }
     public void filter_starts_with_name() throws IOException {
@@ -237,59 +283,6 @@ public class Command {
         } catch (NumberFormatException e){
             outputStream.writeUTF("Invalid argument. Try again");
             logger.info("answer sent");
-        }
-    }
-    public void save() throws ParserConfigurationException, IOException {
-        logger.info("saving to disk");
-        Document newDocument = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-        Element rootElement = newDocument.createElement("Dragons");
-        newDocument.appendChild(rootElement);
-        for (Dragon dragon : set) {
-            Element dragonElement = newDocument.createElement("dragon");
-            rootElement.appendChild(dragonElement);
-            dragonElement.setAttribute("id", dragon.getId().toString());
-            dragonElement.setAttribute("name", dragon.getName());
-            String coordinatesField = dragon.getCoordinates().getX() + " " + dragon.getCoordinates().getY();
-            dragonElement.setAttribute("coordinates", coordinatesField);
-            dragonElement.setAttribute("creation_date", dragon.getCreationDate().toString());
-            dragonElement.setAttribute("age", Long.toString(dragon.getAge()));
-            dragonElement.setAttribute("description", dragon.getDescription());
-            dragonElement.setAttribute("wingspan", Double.toString(dragon.getWingspan()));
-            dragonElement.setAttribute("type", dragon.getType().toString());
-            String caveField = dragon.getCave().getDepth() + " " + dragon.getCave().getNumberOfTreasures();
-            dragonElement.setAttribute("cave", caveField);
-        }
-        try {
-            writeDocument(newDocument, System.getenv("FILE"));
-            logger.info("saved to disk");
-        } catch (NullPointerException e) {
-            logger.info("not saved to disk");
-        }
-    }
-
-
-
-
-    // сторониие функции
-    public void writeDocument(Document document, String path) throws TransformerFactoryConfigurationError, IOException {
-        Transformer transformer;
-        DOMSource domSource;
-        BufferedOutputStream stream;
-        try {
-            transformer = TransformerFactory.newInstance().newTransformer();
-            domSource = new DOMSource(document);
-            File file = new File(path);
-            if (file.canWrite()) {
-                stream = new BufferedOutputStream(new FileOutputStream(path));
-                StreamResult result = new StreamResult(stream);
-                transformer.transform(domSource, result);
-            } else {
-                outputStream.writeUTF("Permission to edit file denied");
-            }
-        } catch (TransformerException e) {
-            e.printStackTrace(System.out);
-        } catch (FileNotFoundException e){
-            outputStream.writeUTF("File not found. Try again");
         }
     }
 

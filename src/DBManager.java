@@ -2,7 +2,8 @@ import java.sql.*;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 
-// local "jdbc:postgresql://localhost:5432/mydatabase" "postgres" "1"
+// local  "jdbc:postgresql://localhost:5432/mydatabase" "postgres" "1"
+// helios "jdbc:postgresql://pg:5432/studs"             "s312551"  "wvz604"
 public class DBManager {
      String DB_URL = "jdbc:postgresql://pg:5432/studs";
      String USER = "s312551";
@@ -17,30 +18,32 @@ public class DBManager {
     }
     public DBManager() { }
 
-    public void connect() throws SQLException {                // подключаемся к БД
+    public boolean connect() throws SQLException {                // подключаемся к БД
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
-            System.out.println("PostgreSQL JDBC Driver is not found. Include it in your library path ");
-            e.printStackTrace();
-            return;
+            System.out.println("PostgreSQL JDBC Driver is not found. Include it in your library path, reconnecting...");
+            //e.printStackTrace();
+            return false;
         }
         System.out.println("PostgreSQL JDBC Driver successfully connected");
         try {
             connection = DriverManager.getConnection(DB_URL, USER, PASS);
         } catch (SQLException e) {
-            System.out.println("Connection Failed");
-            e.printStackTrace();
-            return;
+            System.out.println("Connection to DB failed, reconnecting...");
+            //e.printStackTrace();
+            return false;
         }
         if (connection != null) {
             System.out.println("You successfully connected to database now");
+            return true;
         } else {
-            System.out.println("Failed to make connection to database");
+            System.out.println("Failed to make connection to database, reconnecting...");
+            return false;
         }
     }
 
-    public LinkedHashSet<Dragon> readCollection() {             // считываем из БД в коллекцию
+    public synchronized LinkedHashSet<Dragon> readCollection() {             // считываем из БД в коллекцию
         LinkedHashSet<Dragon> set = new LinkedHashSet<>();
         String selectTableSQL = "SELECT * FROM dragons";
         try {
@@ -70,7 +73,7 @@ public class DBManager {
         }
         return set;
     }
-    public void update(LinkedHashSet<Dragon> set) {              // по коллекции обновляем БД
+    public synchronized void update(LinkedHashSet<Dragon> set) throws SQLException {              // по коллекции обновляем БД
         LinkedHashSet<Dragon> previousSet = readCollection();    // сравниваем сеты и все что отличается добавляем в БД
         for (Dragon dragon : previousSet) {
             deleteDragon(dragon.getId());
@@ -79,7 +82,7 @@ public class DBManager {
             addDragon(dragon);
         }
     }
-    public HashMap<String, String> readUserHashMap() {             // получаем список юзеров
+    public synchronized HashMap<String, String> readUserHashMap() {             // получаем список юзеров
         String selectTableSQL = "SELECT login, password FROM users";
         HashMap<String, String> users = new HashMap<>();
         try {
@@ -96,7 +99,7 @@ public class DBManager {
         return users;
     }
 
-    public void addUser(String login, String password) {        // регистрация нового юзера
+    public synchronized void addUser(String login, String password) {        // регистрация нового юзера
         String insertTableSQL = "INSERT INTO users" + "(login, password) " +
                 "VALUES('" + login + "', '" + password + "')";
         try {
@@ -107,16 +110,12 @@ public class DBManager {
             throwables.printStackTrace();
         }
     }
-    public void deleteDragon(Integer id) {
+    public synchronized void deleteDragon(Integer id) throws SQLException {
         String deleteTableSQL = "DELETE FROM dragons WHERE id = " + id + ";";
-        try {
-            Statement statement = connection.createStatement();
-            statement.executeUpdate(deleteTableSQL);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
+        Statement statement = connection.createStatement();
+        statement.executeUpdate(deleteTableSQL);
     }
-    public void addDragon(Dragon dragon) {        // регистрация нового юзера
+    public synchronized void addDragon(Dragon dragon) throws SQLException {        // регистрация нового юзера
         String insertTableSQL = "INSERT INTO dragons" + "(id, name, x, y, creationdate, age, " +
                 "description, wingspan, type, depth, number, login)" +
                 "VALUES('" + dragon.getId() + "', '" + dragon.getName() +
@@ -124,12 +123,8 @@ public class DBManager {
                 "', '" + dragon.getCreationDate() + "', '" + dragon.getAge() + "', '" + dragon.getDescription() +
                 "', '" + dragon.getWingspan() + "', '" + dragonTypeToInt(dragon.getType()) + "', '" + dragon.getCave().getDepth() +
                 "', '" + dragon.getCave().getNumberOfTreasures() + "', '" + dragon.getOwner() + "')";
-        try {
-            Statement statement = connection.createStatement();
-            statement.executeUpdate(insertTableSQL);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
+        Statement statement = connection.createStatement();
+        statement.executeUpdate(insertTableSQL);
     }
 
     private DragonType intToDragonType(Integer i) {
