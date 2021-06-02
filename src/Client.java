@@ -3,13 +3,20 @@ import java.net.*;
 import java.util.*;
 
 public class Client {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         Scanner consoleScanner = new Scanner(System.in);
-        InetSocketAddress address = new InetSocketAddress(InetAddress.getLocalHost(), 5000);
+        InetSocketAddress address = null;
+        try {
+            address = new InetSocketAddress(InetAddress.getLocalHost(), 5000);
+        } catch (UnknownHostException e) {
+            System.out.println("Problems with local host. Can't run client app");
+        }
         CommandReader commandReader = new CommandReader(address);
         boolean needNormalMode = true;
         while (needNormalMode) {
-            needNormalMode = commandReader.read(consoleScanner, false);
+            try {
+                needNormalMode = commandReader.read(consoleScanner, false);
+            } catch (IOException ignored) { }
         }
     }
 }

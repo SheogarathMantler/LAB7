@@ -75,7 +75,6 @@ public class CommandReader {
                 buffer.flip();
                 return StandardCharsets.UTF_8.decode(buffer).toString();
             } catch (IOException e) {
-                e.printStackTrace();
                 connect();
             }
         }
@@ -222,7 +221,7 @@ public class CommandReader {
 
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 System.out.println("I cant send message");
             }
             byteArrayOutputStream.reset();
